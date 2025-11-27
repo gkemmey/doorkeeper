@@ -394,9 +394,9 @@ RSpec.describe Doorkeeper::OAuth::PreAuthorization do
       end
     end
 
-    context "when force_pkce is enabled" do
+    context "when require_pkce_for? is true" do
       before do
-        allow_any_instance_of(Doorkeeper::Config).to receive(:force_pkce?).and_return(true)
+        allow_any_instance_of(Doorkeeper::Config).to receive(:require_pkce_for?).and_return(true)
       end
 
       context "when the app is confidential" do
@@ -404,10 +404,11 @@ RSpec.describe Doorkeeper::OAuth::PreAuthorization do
           application.update(confidential: true)
         end
 
-        it "accepts a blank code_challenge" do
+        it "does not accept a blank code_challenge" do
           attributes[:code_challenge] = " "
 
-          expect(pre_auth).to be_authorizable
+          expect(pre_auth).to_not be_authorizable
+          expect(pre_auth.error_response.description).to eq(translated_invalid_request_error_message(:invalid_code_challenge, nil))
         end
 
         it "accepts a code challenge" do

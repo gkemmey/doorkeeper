@@ -123,12 +123,6 @@ module Doorkeeper
         @config.instance_variable_set(:@revoke_previous_authorization_code_token, true)
       end
 
-      # Require non-confidential apps to use PKCE (send a code_verifier) when requesting
-      # an access_token using an authorization code (disabled by default)
-      def force_pkce
-        @config.instance_variable_set(:@force_pkce, true)
-      end
-
       # Use an API mode for applications generated with --api argument
       # It will skip applications controller, disable forgery protection
       def api_only
@@ -240,6 +234,7 @@ module Doorkeeper
     # Hooks for authorization
     option :before_successful_authorization,      default: ->(_controller, _context = nil) {}
     option :after_successful_authorization,       default: ->(_controller, _context = nil) {}
+    option :require_pkce_for,                     default: ->(_client) { false }
     # Hooks for strategies responses
     option :before_successful_strategy_response,  default: ->(_request) {}
     option :after_successful_strategy_response,   default: ->(_request, _response) {}
@@ -509,8 +504,8 @@ module Doorkeeper
       option_set? :revoke_previous_authorization_code_token
     end
 
-    def force_pkce?
-      option_set? :force_pkce
+    def require_pkce_for?(client)
+      require_pkce_for.call(client)
     end
 
     def enforce_configured_scopes?
