@@ -146,7 +146,7 @@ module Doorkeeper
       end
 
       def validate_code_challenge
-        return true unless Doorkeeper.config.force_pkce?
+        return true unless Doorkeeper.config.require_pkce_for?(client)
         return true if code_challenge.present?
 
         @invalid_request_reason = :invalid_code_challenge

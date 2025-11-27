@@ -176,7 +176,7 @@ RSpec.describe Doorkeeper::OAuth::AuthorizationCodeRequest do
       end
 
       context "when the app is confidential" do
-        it "does not issue a new token" do
+        it "does not issue a token" do
           expect do
             request.authorize
           end.not_to change { client.reload.access_tokens.count }
@@ -200,6 +200,42 @@ RSpec.describe Doorkeeper::OAuth::AuthorizationCodeRequest do
           request = described_class.new(server, grant, nil, params)
           request.validate
           expect(request.error).to eq(Doorkeeper::Errors::InvalidRequest)
+        end
+      end
+    end
+
+    context "when require_pkce_for? is true for only public clients" do
+      before do
+        Doorkeeper.configure do
+          require_pkce_for { |client| client && !client.confidential? }
+        end
+      end
+
+      context "when the app is confidential" do
+        it "issues a new token for the client" do
+          expect do
+            request.authorize
+          end.to change { client.reload.access_tokens.count }.by(1)
+        end
+      end
+
+      context "when the app is not confidential" do
+        before do
+          client.update(confidential: false)
+        end
+
+        it "does not issue a token" do
+          expect do
+            request.authorize
+          end.not_to change { client.reload.access_tokens.count }
+        end
+      end
+
+      context "when the app is missing" do
+        it "does not assume non-confidential and forcibly validate pkce params" do
+          request = described_class.new(server, grant, nil, params)
+          request.validate
+          expect(request.error).to eq(Doorkeeper::Errors::InvalidClient)
         end
       end
     end

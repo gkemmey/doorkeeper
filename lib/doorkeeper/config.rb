@@ -99,7 +99,7 @@ module Doorkeeper
         @config.instance_variable_set(:@reuse_access_token, true)
       end
 
-      # Choose to use the url path for native autorization codes 
+      # Choose to use the url path for native autorization codes
       # Enabling this flag sets the authorization code response route for
       # native redirect uris to oauth/authorize/<code>. The default is
       # oauth/authorize/native?code=<code>.
@@ -240,6 +240,7 @@ module Doorkeeper
     # Hooks for authorization
     option :before_successful_authorization,      default: ->(_controller, _context = nil) {}
     option :after_successful_authorization,       default: ->(_controller, _context = nil) {}
+    option :require_pkce_for,                     default: ->(_client) { Doorkeeper.config.force_pkce? }
     # Hooks for strategies responses
     option :before_successful_strategy_response,  default: ->(_request) {}
     option :after_successful_strategy_response,   default: ->(_request, _response) {}
@@ -509,6 +510,10 @@ module Doorkeeper
       option_set? :revoke_previous_authorization_code_token
     end
 
+    def require_pkce_for?(client)
+      require_pkce_for.call(client)
+    end
+
     def force_pkce?
       option_set? :force_pkce
     end
@@ -575,7 +580,7 @@ module Doorkeeper
 
     def pkce_code_challenge_methods_supported
       return [] unless access_grant_model.pkce_supported?
-      
+
       pkce_code_challenge_methods
     end
 
@@ -616,7 +621,7 @@ module Doorkeeper
     def deprecated_token_grant_types_resolver
       @deprecated_token_grant_types ||= calculate_token_grant_types
     end
-    
+
     def native_authorization_code_route
       @use_url_path_for_native_authorization = false unless defined?(@use_url_path_for_native_authorization)
       @use_url_path_for_native_authorization ? '/:code' : '/native'
